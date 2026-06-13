@@ -11,6 +11,10 @@ from utils.convergence import time_to_threshold
 from utils.experiment_tracker import ExperimentTracker
 from plots.plot_results import plot_accuracy, plot_loss
 
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def run_single_experiment(seed, dataset, opt_name, epochs, lr):
 
