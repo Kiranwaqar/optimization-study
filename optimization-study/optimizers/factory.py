@@ -20,8 +20,5 @@ def get_optimizer(name, model_params, lr=0.001):
     elif name == "rmsprop":
         return optim.RMSprop(model_params, lr=lr)
 
-    elif name == "adagrad":
-        return optim.Adagrad(model_params, lr=lr)
-
     else:
         raise ValueError(f"Unknown optimizer: {name}")
