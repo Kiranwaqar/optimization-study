@@ -24,6 +24,8 @@ def run_single_experiment(seed, dataset, opt_name, epochs, lr):
 
     train_loader, test_loader, in_channels = get_dataloaders(dataset)
 
+    print("Dataloaders created")
+
     model = SimpleCNN(num_classes=10, in_channels=in_channels)
     optimizer = get_optimizer(opt_name, model.parameters(), lr)
 
@@ -31,7 +33,10 @@ def run_single_experiment(seed, dataset, opt_name, epochs, lr):
 
     test_acc_history = []
 
+    print("Starting training")
+
     for epoch in range(epochs):
+        print(f"Epoch {epoch}")
         trainer.train_one_epoch(train_loader)
         _, test_acc = trainer.evaluate(test_loader)
         test_acc_history.append(test_acc)
@@ -50,6 +55,7 @@ def run_experiment(dataset="cifar10", epochs=1, lr=0.001):
     for opt in optimizers:
 
         print(f"\n OPTIMIZER: {opt}")
+        
 
         all_runs = []
 
