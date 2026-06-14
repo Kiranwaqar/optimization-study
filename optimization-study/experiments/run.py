@@ -31,6 +31,10 @@ def run_single_experiment(seed, dataset, opt_name, epochs, lr):
     print("Dataloaders created")
 
     model = SimpleCNN(num_classes=10, in_channels=in_channels)
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device)
+
     optimizer = get_optimizer(opt_name, model.parameters(), lr)
 
     trainer = Trainer(model, optimizer, device)
