@@ -54,7 +54,7 @@ def run_single_experiment(seed, dataset, opt_name, epochs, lr):
 
 def run_experiment(dataset="cifar10", epochs=20, lr=0.001):
 
-    optimizers = ["sgd", "momentum", "adam", "adamw", "rmsprop", "adagrad"]
+    optimizers = ["sgd", "momentum", "adam", "adamw", "rmsprop"]
     seeds = [42, 52, 99]
 
     results = {}
