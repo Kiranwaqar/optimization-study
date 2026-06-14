@@ -18,6 +18,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def run_single_experiment(seed, dataset, opt_name, epochs, lr):
 
+    print("Dataset =", dataset)
+
     set_seed(seed)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
