@@ -2,7 +2,10 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
 
-def get_dataloaders(dataset_name="cifar10", batch_size=64):
+def get_dataloaders(
+    dataset_name="cifar10",
+    batch_size=64
+):
 
     dataset_name = dataset_name.lower()
 
@@ -36,7 +39,10 @@ def get_dataloaders(dataset_name="cifar10", batch_size=64):
 
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
+            transforms.Normalize(
+                (0.5,),
+                (0.5,)
+            )
         ])
 
         train_set = datasets.FashionMNIST(
@@ -56,20 +62,28 @@ def get_dataloaders(dataset_name="cifar10", batch_size=64):
         in_channels = 1
 
     else:
-        raise ValueError(f"Unsupported dataset: {dataset_name}")
+        raise ValueError(
+            f"Unsupported dataset: {dataset_name}"
+        )
 
     train_loader = DataLoader(
         train_set,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0
+        num_workers=2,
+        pin_memory=True
     )
 
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=0
+        num_workers=2,
+        pin_memory=True
     )
 
-    return train_loader, test_loader, in_channels
+    return (
+        train_loader,
+        test_loader,
+        in_channels
+    )
