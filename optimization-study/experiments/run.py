@@ -12,9 +12,12 @@ from models.cnn import SimpleCNN
 from data.loaders import get_dataloaders
 from optimizers.factory import get_optimizer
 from training.trainer import Trainer
+
 from utils.seed import set_seed
 from utils.convergence import time_to_threshold
 from utils.experiment_tracker import ExperimentTracker
+from utils.resource_monitor import get_memory_usage
+
 from plots.plot_results import plot_accuracy, plot_loss
 
 
@@ -33,7 +36,6 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
         in_channels=in_channels
     ).to(device)
 
-    # Optimizer-specific learning rates
     lr_config = {
         "sgd": 0.01,
         "momentum": 0.01,
@@ -57,6 +59,8 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
     test_acc_history = []
     train_loss_history = []
     test_loss_history = []
+
+    memory_before = get_memory_usage()
 
     start_time = time.time()
 
@@ -86,16 +90,21 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
 
     elapsed_time = time.time() - start_time
 
+    memory_after = get_memory_usage()
+
+    memory_used = memory_after - memory_before
+
     return (
         test_acc_history,
         train_loss_history,
         test_loss_history,
-        elapsed_time
+        elapsed_time,
+        memory_used
     )
 
 
 def run_experiment(
-    dataset="cifar10",
+    dataset="fashionmnist",
     epochs=10
 ):
 
@@ -121,6 +130,7 @@ def run_experiment(
 
         all_runs = []
         all_times = []
+        all_memory = []
 
         all_train_losses = []
         all_test_losses = []
@@ -131,7 +141,8 @@ def run_experiment(
                 acc_history,
                 train_losses,
                 test_losses,
-                elapsed
+                elapsed,
+                memory_used
             ) = run_single_experiment(
                 seed=seed,
                 dataset=dataset,
@@ -141,6 +152,7 @@ def run_experiment(
 
             all_runs.append(acc_history)
             all_times.append(elapsed)
+            all_memory.append(memory_used)
 
             all_train_losses.append(train_losses)
             all_test_losses.append(test_losses)
@@ -161,6 +173,7 @@ def run_experiment(
         )
 
         mean_time = np.mean(all_times)
+        mean_memory = np.mean(all_memory)
 
         convergence_epoch = time_to_threshold(
             mean_acc,
@@ -172,6 +185,7 @@ def run_experiment(
             "std_acc": std_acc.tolist(),
             "convergence_epoch": convergence_epoch,
             "training_time": float(mean_time),
+            "memory_usage_mb": float(mean_memory),
             "train_loss": mean_train_loss.tolist(),
             "test_loss": mean_test_loss.tolist()
         }
@@ -183,22 +197,13 @@ def run_experiment(
 
         tracker.save()
 
-        print(
-            f"\n{opt.upper()} RESULTS"
-        )
+        print(f"\n{opt.upper()} RESULTS")
+        print(f"Convergence Epoch: {convergence_epoch}")
+        print(f"Average Training Time: {mean_time:.2f} seconds")
+        print(f"Average Memory Usage: {mean_memory:.2f} MB")
 
-        print(
-            f"Convergence Epoch: {convergence_epoch}"
-        )
-
-        print(
-            f"Average Training Time: {mean_time:.2f} seconds"
-        )
-
-    # Create folders if needed
     os.makedirs("outputs", exist_ok=True)
 
-    # Accuracy plot
     plot_accuracy(
         {
             k: {"test_acc": v["mean_acc"]}
@@ -206,10 +211,8 @@ def run_experiment(
         }
     )
 
-    # Loss plot
     plot_loss(results)
 
-    # Save CSV summary
     df = pd.DataFrame(results).T
     df.to_csv("outputs/results.csv")
 
@@ -217,4 +220,7 @@ def run_experiment(
 
 
 if __name__ == "__main__":
-    run_experiment()
+    run_experiment(
+        dataset="fashionmnist",
+        epochs=10
+    )
