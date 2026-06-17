@@ -29,7 +29,9 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    train_loader, test_loader, in_channels = get_dataloaders(dataset)
+    train_loader, test_loader, in_channels = get_dataloaders(
+        dataset
+    )
 
     model = SimpleCNN(
         num_classes=10,
@@ -60,9 +62,9 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
     train_loss_history = []
     test_loss_history = []
 
-    memory_before = get_memory_usage()
-
     start_time = time.time()
+
+    peak_memory = get_memory_usage()
 
     print("Starting training...")
 
@@ -75,6 +77,11 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
         test_loss, test_acc = trainer.evaluate(
             test_loader
         )
+
+        current_memory = get_memory_usage()
+
+        if current_memory > peak_memory:
+            peak_memory = current_memory
 
         train_loss_history.append(train_loss)
         test_loss_history.append(test_loss)
@@ -90,16 +97,12 @@ def run_single_experiment(seed, dataset, opt_name, epochs):
 
     elapsed_time = time.time() - start_time
 
-    memory_after = get_memory_usage()
-
-    memory_used = memory_after - memory_before
-
     return (
         test_acc_history,
         train_loss_history,
         test_loss_history,
         elapsed_time,
-        memory_used
+        peak_memory
     )
 
 
@@ -142,7 +145,7 @@ def run_experiment(
                 train_losses,
                 test_losses,
                 elapsed,
-                memory_used
+                peak_memory
             ) = run_single_experiment(
                 seed=seed,
                 dataset=dataset,
@@ -152,15 +155,22 @@ def run_experiment(
 
             all_runs.append(acc_history)
             all_times.append(elapsed)
-            all_memory.append(memory_used)
+            all_memory.append(peak_memory)
 
             all_train_losses.append(train_losses)
             all_test_losses.append(test_losses)
 
         all_runs = np.array(all_runs)
 
-        mean_acc = np.mean(all_runs, axis=0)
-        std_acc = np.std(all_runs, axis=0)
+        mean_acc = np.mean(
+            all_runs,
+            axis=0
+        )
+
+        std_acc = np.std(
+            all_runs,
+            axis=0
+        )
 
         mean_train_loss = np.mean(
             np.array(all_train_losses),
@@ -173,21 +183,45 @@ def run_experiment(
         )
 
         mean_time = np.mean(all_times)
-        mean_memory = np.mean(all_memory)
+
+        mean_memory = np.mean(
+            all_memory
+        )
+
+        best_accuracy = float(
+            np.max(mean_acc)
+        )
 
         convergence_epoch = time_to_threshold(
             mean_acc,
-            threshold=0.70
+            threshold=0.90
         )
 
         results[opt] = {
-            "mean_acc": mean_acc.tolist(),
-            "std_acc": std_acc.tolist(),
-            "convergence_epoch": convergence_epoch,
-            "training_time": float(mean_time),
-            "memory_usage_mb": float(mean_memory),
-            "train_loss": mean_train_loss.tolist(),
-            "test_loss": mean_test_loss.tolist()
+
+            "best_accuracy":
+                best_accuracy,
+
+            "mean_acc":
+                mean_acc.tolist(),
+
+            "std_acc":
+                std_acc.tolist(),
+
+            "convergence_epoch":
+                convergence_epoch,
+
+            "training_time":
+                float(mean_time),
+
+            "memory_usage_mb":
+                float(mean_memory),
+
+            "train_loss":
+                mean_train_loss.tolist(),
+
+            "test_loss":
+                mean_test_loss.tolist()
         }
 
         tracker.add_result(
@@ -197,16 +231,41 @@ def run_experiment(
 
         tracker.save()
 
-        print(f"\n{opt.upper()} RESULTS")
-        print(f"Convergence Epoch: {convergence_epoch}")
-        print(f"Average Training Time: {mean_time:.2f} seconds")
-        print(f"Average Memory Usage: {mean_memory:.2f} MB")
+        print(
+            f"\n{opt.upper()} RESULTS"
+        )
 
-    os.makedirs("outputs", exist_ok=True)
+        print(
+            f"Best Accuracy: "
+            f"{best_accuracy:.4f}"
+        )
+
+        print(
+            f"Convergence Epoch: "
+            f"{convergence_epoch}"
+        )
+
+        print(
+            f"Average Training Time: "
+            f"{mean_time:.2f} seconds"
+        )
+
+        print(
+            f"Average Peak Memory: "
+            f"{mean_memory:.2f} MB"
+        )
+
+    os.makedirs(
+        "outputs",
+        exist_ok=True
+    )
 
     plot_accuracy(
         {
-            k: {"test_acc": v["mean_acc"]}
+            k: {
+                "test_acc":
+                v["mean_acc"]
+            }
             for k, v in results.items()
         }
     )
@@ -214,12 +273,28 @@ def run_experiment(
     plot_loss(results)
 
     df = pd.DataFrame(results).T
-    df.to_csv("outputs/results.csv")
+
+    df.to_csv(
+        "outputs/results.csv"
+    )
+
+    print(
+        "\nResults saved to:"
+    )
+
+    print(
+        "outputs/results.csv"
+    )
+
+    print(
+        "outputs/results.json"
+    )
 
     return results
 
 
 if __name__ == "__main__":
+
     run_experiment(
         dataset="fashionmnist",
         epochs=10
